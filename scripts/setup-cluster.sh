@@ -5,6 +5,7 @@ set -e
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}🚀 Setting up Lab 1 cluster...${NC}"
@@ -100,6 +101,22 @@ kubectl wait --for=condition=available --timeout=300s deployment --all -n lab1
 # Wait for traefik to be ready
 echo -e "${BLUE}⏳ Waiting for traefik ingress to be ready...${NC}"
 sleep 10
+
+# Wait for API to be accessible via ingress
+echo -e "${BLUE}⏳ Waiting for orders-api to be accessible via ingress...${NC}"
+for i in {1..60}; do
+    if curl -s -w "%{http_code}" http://localhost:8080/health | grep -q "200"; then
+        echo -e "${GREEN}✅ Orders API is accessible${NC}"
+        break
+    fi
+    if [ $i -eq 60 ]; then
+        echo -e "${RED}❌ Orders API is not accessible after 2 minutes${NC}"
+        echo -e "${YELLOW}⚠️  Check ingress and traefik configuration${NC}"
+        exit 1
+    fi
+    echo -e "${YELLOW}⏳ Waiting for API... ($i/60)${NC}"
+    sleep 2
+done
 
 # Setup port forwards for monitoring tools
 echo -e "${BLUE}🔌 Setting up port forwards for monitoring tools...${NC}"
