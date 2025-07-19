@@ -1,0 +1,268 @@
+{
+    "dashboard": {
+        "id": null,
+        "title": "SLO Monitoring - Orders API",
+        "description": "Dashboard for monitoring SLO compliance for Orders API service",
+        "tags": [
+            "slo",
+            "orders-api",
+            "lab1"
+        ],
+        "style": "dark",
+        "timezone": "browser",
+        "refresh": "30s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "panels": [
+            {
+                "id": 1,
+                "title": "P95 Request Latency",
+                "type": "timeseries",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 0
+                },
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{code=~\"2..\"}[5m]))) * 1000",
+                        "legendFormat": "P95 Latency (ms)",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "linear",
+                            "lineWidth": 2,
+                            "fillOpacity": 10,
+                            "gradientMode": "none",
+                            "spanNulls": false,
+                            "insertNulls": false,
+                            "showPoints": "auto",
+                            "pointSize": 5,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "axisPlacement": "auto",
+                            "axisLabel": "",
+                            "axisColorMode": "text",
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "vis": false
+                            },
+                            "thresholdsStyle": {
+                                "mode": "line"
+                            }
+                        },
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "ms"
+                    },
+                    "overrides": []
+                },
+                "options": {
+                    "tooltip": {
+                        "mode": "single",
+                        "sort": "none"
+                    },
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "bottom",
+                        "calcs": [
+                            "lastNotNull",
+                            "max",
+                            "mean"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "title": "Error Rate",
+                "type": "timeseries",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(http_requests_received_total{code=~\"5..\"}[5m])) / sum(rate(http_requests_received_total{code=~\"2..|3..|4..|5..\"}[5m])) * 100",
+                        "legendFormat": "Error Rate (%)",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "palette-classic"
+                        },
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "linear",
+                            "lineWidth": 2,
+                            "fillOpacity": 10,
+                            "gradientMode": "none",
+                            "spanNulls": false,
+                            "insertNulls": false,
+                            "showPoints": "auto",
+                            "pointSize": 5,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "axisPlacement": "auto",
+                            "axisLabel": "",
+                            "axisColorMode": "text",
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "vis": false
+                            },
+                            "thresholdsStyle": {
+                                "mode": "line"
+                            }
+                        },
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 0.5
+                                }
+                            ]
+                        },
+                        "unit": "percent"
+                    },
+                    "overrides": []
+                },
+                "options": {
+                    "tooltip": {
+                        "mode": "single",
+                        "sort": "none"
+                    },
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "bottom",
+                        "calcs": [
+                            "lastNotNull",
+                            "max",
+                            "mean"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "title": "SLO Summary",
+                "type": "stat",
+                "gridPos": {
+                    "h": 4,
+                    "w": 24,
+                    "x": 0,
+                    "y": 8
+                },
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{code=~\"2..\"}[5m]))) < 0.090",
+                        "legendFormat": "Latency SLO Compliance",
+                        "refId": "A"
+                    },
+                    {
+                        "expr": "sum(rate(http_requests_received_total{code=~\"5..\"}[5m])) / sum(rate(http_requests_received_total{code=~\"2..|3..|4..|5..\"}[5m])) < 0.005",
+                        "legendFormat": "Error Rate SLO Compliance",
+                        "refId": "B"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "0": {
+                                        "text": "SLO Violated",
+                                        "color": "red"
+                                    },
+                                    "1": {
+                                        "text": "SLO OK",
+                                        "color": "green"
+                                    }
+                                },
+                                "type": "value"
+                            }
+                        ],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 1
+                                }
+                            ]
+                        }
+                    },
+                    "overrides": []
+                },
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": ""
+                    },
+                    "orientation": "horizontal",
+                    "textMode": "value_and_name",
+                    "colorMode": "background",
+                    "graphMode": "none",
+                    "justifyMode": "center"
+                }
+            }
+        ],
+        "schemaVersion": 30,
+        "version": 1,
+        "links": []
+    },
+    "overwrite": true
+}
