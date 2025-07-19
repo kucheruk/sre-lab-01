@@ -47,10 +47,6 @@ if [ "$CREATE_CLUSTER" = true ]; then
       --servers 1 \
       --agents 2 \
       --port "8080:80@loadbalancer" \
-      --port "9090:9090@loadbalancer" \
-      --port "3000:3000@loadbalancer" \
-      --port "16686:16686@loadbalancer" \
-      --k3s-arg "--disable=traefik@server:0" \
       --wait
 
     echo "⏳ Waiting for cluster to be ready..."
@@ -94,19 +90,25 @@ kubectl apply -f k8s/orders-api/
 echo -e "${BLUE}📊 Applying monitoring manifests...${NC}"  
 kubectl apply -f k8s/monitoring/
 
+echo -e "${BLUE}🌐 Applying ingress configuration...${NC}"
+kubectl apply -f k8s/ingress.yaml
+
 # Wait for deployments
 echo -e "${BLUE}⏳ Waiting for deployments to be ready...${NC}"
 kubectl wait --for=condition=available --timeout=300s deployment --all -n lab1
 
-# Create port forwards
-echo -e "${BLUE}🔌 Setting up port forwards...${NC}"
+# Wait for traefik to be ready
+echo -e "${BLUE}⏳ Waiting for traefik ingress to be ready...${NC}"
+sleep 10
+
+# Setup port forwards for monitoring tools
+echo -e "${BLUE}🔌 Setting up port forwards for monitoring tools...${NC}"
 
 # Function to start port forwarding with retry
 start_port_forward() {
-    local port=$1
-    local service=$2
-    local local_port=$3
-    local service_port=$4
+    local service=$1
+    local local_port=$2
+    local service_port=$3
     
     if lsof -i :$local_port &>/dev/null; then
         echo -e "${YELLOW}🔌 Port $local_port already in use${NC}"
@@ -128,13 +130,11 @@ start_port_forward() {
     fi
 }
 
-# Start port forwards with proper error handling
-start_port_forward orders-api 8080 80
+# Start port forwards for monitoring tools
 start_port_forward prometheus 9090 9090  
 start_port_forward grafana 3000 3000
 start_port_forward jaeger 16686 16686
 
-# Additional wait to ensure port forwards are stable
 sleep 2
 
 # Import Grafana dashboard
@@ -176,14 +176,16 @@ echo ""
 echo -e "${GREEN}✅ Lab 1 cluster setup complete!${NC}"
 echo ""
 echo -e "${BLUE}🔗 Access points:${NC}"
-echo "  - Orders API: http://localhost:8080"
-echo "  - Prometheus: http://localhost:9090"
+echo "  - Orders API: http://localhost:8080/api/orders, http://localhost:8080/health"
+echo "  - Metrics: http://localhost:8080/metrics"
 echo "  - Grafana: http://localhost:3000 (admin/lab1pass)"
+echo "  - Prometheus: http://localhost:9090"
 echo "  - Jaeger: http://localhost:16686"
 echo ""
 echo -e "${BLUE}🧪 Next steps:${NC}"
 echo "  1. Test the API: curl http://localhost:8080/health"
-echo "  2. Run load test: K6_RPS=100 k6 run scripts/load.js"
-echo "  3. Check the setup: ./scripts/verify-setup.sh"
+echo "  2. View metrics: curl http://localhost:8080/metrics"
+echo "  3. Run load test: K6_RPS=100 k6 run scripts/load.js"
+echo "  4. Check the setup: ./scripts/verify-setup.sh"
 echo ""
 echo -e "${YELLOW}💡 Pro tip: This script is idempotent - you can run it multiple times safely!${NC}" 

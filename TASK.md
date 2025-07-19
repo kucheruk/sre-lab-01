@@ -119,7 +119,7 @@ curl -w "%{http_code}\n" -s http://localhost:8080/health
 curl -s http://localhost:8080/metrics | grep http_request_duration_seconds_bucket | head -5
 
 # Должны увидеть строки типа:
-# http_request_duration_seconds_bucket{method="GET",route="/api/orders",status_code="200",le="0.005"} 0
+# http_request_duration_seconds_bucket{method="GET",route="/api/orders",code="200",le="0.005"} 0
 ```
 
 ---
@@ -135,7 +135,7 @@ curl -s http://localhost:8080/metrics | grep http_request_duration_seconds_bucke
 # Формула для p95 латентности (успешные запросы 2xx/3xx)
 histogram_quantile(0.95,
   sum by (le) (
-    rate(http_request_duration_seconds_bucket{status_code=~"2..|3.."}[5m])
+    rate(http_request_duration_seconds_bucket{code=~"2..|3.."}[5m])
   )
 )
 ```
@@ -144,16 +144,16 @@ histogram_quantile(0.95,
 ```promql
 # Вариант 1: Все ошибки 5xx / все запросы
 (
-  sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+  sum(rate(http_requests_received_total{code=~"5.."}[5m]))
   /
-  sum(rate(http_requests_total{status_code=~"2..|3..|4..|5.."}[5m]))
+  sum(rate(http_requests_received_total{code=~"2..|3..|4..|5.."}[5m]))
 )
 
 # Вариант 2: Только серверные ошибки / успешные запросы
 (
-  sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+  sum(rate(http_requests_received_total{code=~"5.."}[5m]))
   /
-  sum(rate(http_requests_total{status_code=~"2..|3.."}[5m]))
+  sum(rate(http_requests_received_total{code=~"2..|3.."}[5m]))
 )
 ```
 
@@ -437,7 +437,7 @@ Error Budget = Monthly Requests × Target Error Rate
 **Решение**: Используйте окно 5m вместо 1m в rate()
 
 ### Проблема: Error ratio всегда 0
-**Решение**: Проверьте регулярку status_code, возможно нет ошибок 5xx
+**Решение**: Проверьте регулярку code, возможно нет ошибок 5xx
 
 ### Проблема: Слишком высокий p95 в начале теста  
 **Решение**: Исключите первые 2-3 минуты (прогрев)
